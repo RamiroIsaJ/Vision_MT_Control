@@ -81,7 +81,6 @@ class ControlPump:
             rest_time = np.round(self.time_H - time_sleep, 4)
             print('Highest fluid : ' + str(self.fluid_H) + ' ul/min.  Remaining time ----->> ' + str(rest_time))
             if rest_time > 0:
-                self.window['_MES_'].update('Highest fluid is activated')
                 self.active_pump(self.fluid_H)
             else:
                 self.control = False
@@ -90,7 +89,6 @@ class ControlPump:
             rest_time = np.round(self.time_L - time_sleep, 4)
             print('Lowest fluid: ' + str(self.fluid_L) + ' ul/min.  Remaining time ----->> ' + str(rest_time))
             if rest_time > 0:
-                self.window['_MES_'].update('Lowest fluid is activated')
                 self.active_pump(self.fluid_L)
             else:
                 self.control = True
