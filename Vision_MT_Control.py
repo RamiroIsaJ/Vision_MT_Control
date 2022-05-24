@@ -300,8 +300,8 @@ while True:
             sg.Popup('Error', ['Port not connected or Information is wrong.'])
 
     if pump_:
-        confirm = readIm.ready_img(time_read, values)
         if ctr_method:
+            confirm = readIm.ready_img(time_read, values)
             if confirm:
                 image_l, name_l = readIm.load_image()
                 cont_ini, cords_well, ima_res, x, y, radius = segYes.ini_well(image_l, cont_ini, cords_well, buffer_size)
