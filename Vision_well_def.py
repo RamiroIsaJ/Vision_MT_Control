@@ -402,16 +402,17 @@ def save_csv_file(data_, des, header):
 def graph_data(des, header):
     _root_data = os.path.join(des, header+'.csv')
     data_ = pd.read_csv(_root_data)
-    y = np.array(data_['Percentage'])
+    y = np.array(data_['Area'])
     x = np.arange(1, len(y) + 1, 1)
     fig = plt.figure()
     plt.plot(x, y, 'o')
     plt.grid()
     plt.xlabel('N. of image')
-    plt.ylabel('Percentage')
+    plt.ylabel('Area of Yeast (um.)')
     _root_fig = os.path.join(des, 'Percentage_'+header+'.jpg')
     fig.tight_layout()
     plt.savefig(_root_fig)
     plt.close()
+
 
 
