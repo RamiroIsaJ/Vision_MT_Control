@@ -4,6 +4,7 @@
 # This program uses 2 threads to avoid errors during the execution
 
 import cv2
+import math
 import threading
 import time as tm
 import numpy as np
@@ -75,11 +76,12 @@ layout3a = [[sg.T('', size=(5, 1)), sg.Radio('Control - Area', "RADIO3", enable_
              sg.Text('min', size=(4, 1))]]
 
 
-layout4a = [[sg.T('', size=(5, 1))],
+layout4a = [[sg.Text('Radius Well: ', size=(12, 1)), sg.InputText('700', size=(6, 1), key='_RAW_'),
+            sg.Text('um.', size=(8, 1))],
             [sg.Text('* Highest fluid:', size=(12, 1)),
-             sg.InputText('100', key='_HST_', size=(5, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))],
+             sg.InputText('100', key='_HST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))],
             [sg.Text('* Lowest fluid:', size=(12, 1)),
-             sg.InputText('10', key='_LST_', size=(5, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))]]
+             sg.InputText('10', key='_LST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))]]
 
 layout4b = [[sg.Text('Name: ', size=(9, 1)),
             sg.Combo(values=portsWIN, size=(9, 1), enable_events=True, key='_PORT_')],
@@ -128,11 +130,11 @@ window['_IMA_'].update(data=Vs.bytes_(img, m1, n1))
 graph = Vs.draw_figure(window["_CANVAS_"].TKCanvas, fig)
 # ----------------------------------------------------------------------------------
 time_, id_image, time_h, time_l, fluid_h, fluid_l, port_name, bauds_, = 0, 1, 0, 0, 0, 0, 0, 0
-area_h, area_l, c_port, id_sys, time_read, area_seq = 0, 0, -1, 0, 0, 0
+area_h, area_l, c_port, id_sys, time_read, area_seq, area_total = 0, 0, -1, 0, 0, 0, 0
 view_, save_, pump_, control, ctr_method = False, False, False, True, False
 video, name, image, ini_time, ini_time_, path_ori, path_des, type_i = None, None, None, None, None, None, None, None
 saveIm, pumpC, readIm, cords_well, cont_ini, i, k, buffer, buffer_size, p_area = None, None, None, [], 0, 0, 0, 0, 0, []
-results = pd.DataFrame(columns=['Image', 'Percentage'])
+results = pd.DataFrame(columns=['Image', 'Percentage', 'Area'])
 segYes = Vw.SegmentYeast()
 segYes.build_filters()
 # -----------------------------------------------------------------------------------
@@ -267,13 +269,13 @@ while True:
         thread.start()
 
     if event == 'Control':
+        radius = float(values['_RAW_'])
+        area_total = np.round(math.pi * radius ** 2, 2)
         if values['_SYS_']:
             path_des = Vs.update_dir(values['_DES_']) + "\\"
             path_des = r'{}'.format(path_des)
         else:
             path_des = values['_DES_'] + '/'
-            path_ori = values['_SOU_'] + '/'
-        type_i = '.jpg'
         # -------------------------------------
         fluid_h = int(values['_HST_'])
         fluid_l = int(values['_LST_'])
@@ -305,18 +307,19 @@ while True:
             if confirm:
                 image_l, name_l = readIm.load_image()
                 cont_ini, cords_well, ima_res, x, y, radius = segYes.ini_well(image_l, cont_ini, cords_well, buffer_size)
-                k, area_well, mean_area, img_f = segYes.well_main(path_des, ima_res, name_l, type_i, i, k, x, y, radius)
-                area_seq = np.copy(area_well)
-                results = results.append({'Image': name_l, 'Percentage': area_well}, ignore_index=True)
+                k, percentage_well, mean_area, img_f = segYes.well_main(path_des, ima_res, name_l, type_i, i, k, x, y, radius)
+                area_seq = np.copy(percentage_well)
+                area_yeast = np.round((area_total * percentage_well) / 100, 2)
+                results = results.append({'Image': name_l, 'Percentage': percentage_well, 'Area': area_yeast}, ignore_index=True)
                 window['_IMA_'].update(data=Vs.bytes_(img_f, m1, n1))
                 window['_NIM_'].update(name_l)
-                window['_CAR_'].update(area_well)
+                window['_CAR_'].update(percentage_well)
                 window['_BUM_'].update(k)
                 # -----------------------------------------------
                 if mean_area > 0:
                     window['_MAR_'].update(mean_area)
                 # -----------------------------------------------
-                p_area.append(area_well)
+                p_area.append(percentage_well)
                 values_area = np.array(p_area)
                 ax.clear()
                 ax.plot(values_area, 'o-')
