@@ -405,7 +405,7 @@ def graph_data(des, header):
     y = np.array(data_['Area'])
     x = np.arange(1, len(y) + 1, 1)
     fig = plt.figure()
-    plt.plot(x, y, 'o')
+    plt.plot(x, y, 'o-')
     plt.grid()
     plt.xlabel('N. of image')
     plt.ylabel('Area of Yeast (um.)')
