@@ -1,4 +1,5 @@
 import cv2
+import time
 import serial
 import numpy as np
 import matplotlib
@@ -67,6 +68,7 @@ class ControlPump:
         else:
             cad_port = '<<J000F0' + str(v_fluid) + '.0000>\n'
         self.port.write(bytes(cad_port.encode()))
+        time.sleep(3)
         # Stop pump
         self.port.write(b'<<J000S>\n')
         self.port.close()
@@ -100,15 +102,16 @@ class ControlPump:
         if self.control:
             if m_area < self.area_H:
                 self.active_pump(self.fluid_L)
-                print('----------- Lowest fluid is injected -----------')
+                print(' Injected Lowest fluid ------->> ' + str(self.fluid_L) + ' ul/min.')
             else:
                 self.control = False
         else:
             if m_area > self.area_L:
                 self.active_pump(self.fluid_H)
-                print('----------- Highest fluid is injected -----------')
+                print(' Injected Highest fluid ------->> ' + str(self.fluid_H) + ' ul/min.')
             else:
                 self.control = True
+
 
 
 def bytes_(img_, m, n):
