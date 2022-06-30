@@ -301,6 +301,7 @@ while True:
         else:
             sg.Popup('Error', ['Port not connected or Information is wrong.'])
 
+
     if pump_:
         if ctr_method:
             confirm = readIm.ready_img(time_read, values)
@@ -308,7 +309,6 @@ while True:
                 image_l, name_l = readIm.load_image()
                 cont_ini, cords_well, ima_res, x, y, radius = segYes.ini_well(image_l, cont_ini, cords_well, buffer_size)
                 k, percentage_well, mean_area, img_f = segYes.well_main(path_des, ima_res, name_l, type_i, i, k, x, y, radius)
-                area_seq = np.copy(percentage_well)
                 area_yeast = np.round((area_total * percentage_well) / 100, 2)
                 results = results.append({'Image': name_l, 'Percentage': percentage_well, 'Area': area_yeast}, ignore_index=True)
                 window['_IMA_'].update(data=Vs.bytes_(img_f, m1, n1))
@@ -317,26 +317,21 @@ while True:
                 window['_BUM_'].update(k)
                 # -----------------------------------------------
                 if mean_area > 0:
+                    area_seq = np.copy(mean_area)
                     window['_MAR_'].update(mean_area)
                 # -----------------------------------------------
-                p_area.append(percentage_well)
-                values_area = np.array(p_area)
-                ax.clear()
-                ax.plot(values_area, 'o-')
-                ax.grid()
-                graph.draw()
+                    p_area.append(mean_area)
+                    values_area = np.array(p_area)
+                    ax.clear()
+                    ax.plot(values_area, 'o-')
+                    ax.grid()
+                    graph.draw()
                 # -----------------------------------------------
-                thread = threading.Thread(name="Thread-{}".format(2),
-                                          target=thread_pump2(fluid_h, fluid_l, area_h, area_l, area_well),
-                                          args=(pumpC,))
-                thread.setDaemon(True)
-                thread.start()
-            else:
-                thread = threading.Thread(name="Thread-{}".format(2),
-                                          target=thread_pump2(fluid_h, fluid_l, area_h, area_l, area_seq),
-                                          args=(pumpC,))
-                thread.setDaemon(True)
-                thread.start()
+            thread = threading.Thread(name="Thread-{}".format(2),
+                                      target=thread_pump2(fluid_h, fluid_l, area_h, area_l, area_seq),
+                                      args=(pumpC,))
+            thread.setDaemon(True)
+            thread.start()
             i += 1
         else:
             thread = threading.Thread(name="Thread-{}".format(2),
