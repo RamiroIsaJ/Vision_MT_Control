@@ -81,7 +81,7 @@ class ControlPump:
 
         if self.control:
             rest_time = np.round(self.time_H - time_sleep, 4)
-            print('Highest fluid : ' + str(self.fluid_H) + ' ul/min.  Remaining time ----->> ' + str(rest_time))
+            print(' Injected Lowest fluid : ' + str(self.fluid_H) + ' ul/min.  Remaining time ----->> ' + str(rest_time))
             if rest_time > 0:
                 self.active_pump(self.fluid_H)
             else:
@@ -89,7 +89,7 @@ class ControlPump:
                 self.ini_time = datetime.now()
         else:
             rest_time = np.round(self.time_L - time_sleep, 4)
-            print('Lowest fluid: ' + str(self.fluid_L) + ' ul/min.  Remaining time ----->> ' + str(rest_time))
+            print('Injected  Highest fluid: ' + str(self.fluid_L) + ' ul/min.  Remaining time ----->> ' + str(rest_time))
             if rest_time > 0:
                 self.active_pump(self.fluid_L)
             else:
@@ -102,7 +102,7 @@ class ControlPump:
         if self.control:
             if m_area < self.area_H:
                 self.active_pump(self.fluid_L)
-                print(' Injected Lowest fluid ------->> ' + str(self.fluid_L) + ' ul/min.')
+                print('Injected Lowest fluid ------->> ' + str(self.fluid_L) + ' ul/min.')
             else:
                 self.control = False
         else:
@@ -111,7 +111,6 @@ class ControlPump:
                 print(' Injected Highest fluid ------->> ' + str(self.fluid_H) + ' ul/min.')
             else:
                 self.control = True
-
 
 
 def bytes_(img_, m, n):
