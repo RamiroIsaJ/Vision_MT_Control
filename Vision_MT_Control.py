@@ -31,7 +31,7 @@ def thread_pump2(fluid_h_, fluid_l_, area_h_, area_l_, area_):
 # -------------------------------
 # Adjust size screen
 # -------------------------------
-Screen_size = 10
+Screen_size = 9
 # -------------------------------
 sg.theme('LightGrey1')
 m1, n1 = 300, 300
@@ -68,45 +68,45 @@ layout3a = [[sg.T('', size=(5, 1)), sg.Radio('Control - Area', "RADIO3", enable_
              sg.Text('img.', size=(5, 1))],
             [sg.Text('Area MAX:', size=(10, 1)), sg.InputText('70', key='_AMX_', size=(7, 1), enable_events=True),
              sg.Text('%', size=(5, 1)),
-             sg.Text('Time MAX:', size=(10, 1)), sg.InputText('60', key='_THS_', size=(7, 1), enable_events=True),
+             sg.Text('Time MIN fluid:', size=(14, 1)), sg.InputText('40', key='_THS_', size=(7, 1), enable_events=True),
              sg.Text('min', size=(4, 1))],
             [sg.Text('Area MIN:', size=(10, 1)), sg.InputText('30', key='_AMN_', size=(7, 1), enable_events=True),
              sg.Text('%', size=(5, 1)),
-             sg.Text('Time MIN:', size=(10, 1)), sg.InputText('5', key='_TLS_', size=(7, 1), enable_events=True),
+             sg.Text('Time MAX fluid:', size=(14, 1)), sg.InputText('1', key='_TLS_', size=(7, 1), enable_events=True),
              sg.Text('min', size=(4, 1))]]
 
 
 layout4a = [[sg.Text('Radius Well: ', size=(12, 1)), sg.InputText('700', size=(6, 1), key='_RAW_'),
             sg.Text('um.', size=(8, 1))],
-            [sg.Text('* Highest fluid:', size=(12, 1)),
-             sg.InputText('100', key='_HST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))],
             [sg.Text('* Lowest fluid:', size=(12, 1)),
-             sg.InputText('10', key='_LST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))]]
+             sg.InputText('10', key='_HST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))],
+            [sg.Text('* Highest fluid:', size=(12, 1)),
+             sg.InputText('100', key='_LST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))]]
 
 layout4b = [[sg.Text('Name: ', size=(9, 1)),
             sg.Combo(values=portsWIN, size=(9, 1), enable_events=True, key='_PORT_')],
             [sg.Text('Baudrate:', size=(9, 1)), sg.InputText('9600', key='_RTE_', size=(10, 1))],
             [sg.Text('Status:', size=(8, 1)), sg.Text('NOT CONNECT', size=(13, 1), key='_CON_', text_color='red')]]
 
-layout5 = [[sg.Text('Name images: ', size=(12, 1)), sg.InputText('Experiment1_', size=(28, 1), key='_NAM_')],
-           [sg.Text('Source path: ', size=(12, 1)), sg.InputText(size=(28, 1), key='_SOU_'), sg.FolderBrowse()],
-           [sg.Text('Destiny path: ', size=(12, 1)), sg.InputText(size=(28, 1), key='_DES_'), sg.FolderBrowse()]]
+layout5 = [[sg.Text('Name images: ', size=(12, 1)), sg.InputText('Experiment1_', size=(31, 1), key='_NAM_')],
+           [sg.Text('Source path: ', size=(12, 1)), sg.InputText(size=(31, 1), key='_SOU_'), sg.FolderBrowse()],
+           [sg.Text('Destiny path: ', size=(12, 1)), sg.InputText(size=(31, 1), key='_DES_'), sg.FolderBrowse()]]
 
 
 layout7 = [[sg.T("", size=(15, 1)), sg.Text('Current time: ', size=(10, 1)), sg.Text('', size=(10, 1), key='_TAC_')],
            [sg.T("", size=(2, 1)),
             sg.Text('Start time: ', size=(8, 1)), sg.Text('-- : -- : --', size=(10, 1), key='_TIN_', text_color='blue'),
-            sg.T("", size=(5, 1)),
-            sg.Text('Finish time: ', size=(8, 1)), sg.Text('-- : -- : --', size=(10, 1), key='_TFI_', text_color='red')],
+            sg.T("", size=(7, 1)),
+            sg.Text('Finish time: ', size=(9, 1)), sg.Text('-- : -- : --', size=(10, 1), key='_TFI_', text_color='red')],
            [sg.Text('Waiting time: ', size=(11, 1)), sg.InputText('', key='_RES_', size=(12, 1)),
-            sg.Text('...', size=(1, 1), key='_ITM_'),
-            sg.Text('Total/images: ', size=(12, 1)), sg.InputText('', key='_CIM_', size=(8, 1))],
+            sg.Text('...', size=(4, 1), key='_ITM_'),
+            sg.Text('Total/images: ', size=(12, 1)), sg.InputText('', key='_CIM_', size=(10, 1))],
            [sg.Text('Name Image: ', size=(11, 1)), sg.InputText('', key='_NIM_', size=(12, 1)),
-            sg.Text(' ', size=(1, 1)),
-            sg.Text('Current Area: ', size=(12, 1)), sg.InputText('', key='_CAR_', size=(8, 1))],
+            sg.Text(' ', size=(4, 1)),
+            sg.Text('Current Area: ', size=(12, 1)), sg.InputText('', key='_CAR_', size=(10, 1))],
            [sg.Text('Buffer image: ', size=(11, 1)), sg.InputText('', key='_BUM_', size=(12, 1)),
-            sg.Text(' ', size=(1, 1)),
-            sg.Text('Mean Area:', size=(12, 1)), sg.InputText('', key='_MAR_', size=(8, 1))]
+            sg.Text(' ', size=(4, 1)),
+            sg.Text('Mean Area:', size=(12, 1)), sg.InputText('', key='_MAR_', size=(10, 1))]
            ]
 
 v_img = [sg.Image(filename='', key="_IMA_")]
@@ -301,7 +301,6 @@ while True:
         else:
             sg.Popup('Error', ['Port not connected or Information is wrong.'])
 
-
     if pump_:
         if ctr_method:
             confirm = readIm.ready_img(time_read, values)
@@ -310,7 +309,8 @@ while True:
                 cont_ini, cords_well, ima_res, x, y, radius = segYes.ini_well(image_l, cont_ini, cords_well, buffer_size)
                 k, percentage_well, mean_area, img_f = segYes.well_main(path_des, ima_res, name_l, type_i, i, k, x, y, radius)
                 area_yeast = np.round((area_total * percentage_well) / 100, 2)
-                results = results.append({'Image': name_l, 'Percentage': percentage_well, 'Area': area_yeast}, ignore_index=True)
+                results = results.append({'Image': name_l, 'Percentage': percentage_well, 'Area': area_yeast},
+                                         ignore_index=True)
                 window['_IMA_'].update(data=Vs.bytes_(img_f, m1, n1))
                 window['_NIM_'].update(name_l)
                 window['_CAR_'].update(percentage_well)
