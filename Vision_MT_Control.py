@@ -24,14 +24,14 @@ def thread_pump1(fluid_h_, fluid_l_, time_h_, time_l_):
     pumpC.control_time(fluid_h_, fluid_l_, time_h_, time_l_)
 
 
-def thread_pump2(fluid_h_, fluid_l_, area_h_, area_l_, area_):
-    pumpC.control_area(fluid_h_, fluid_l_, area_h_, area_l_, area_)
+def thread_pump2(fluid_h_, fluid_l_, area_h_, area_l_, time_h_, area_):
+    pumpC.control_area(fluid_h_, fluid_l_, area_h_, area_l_, time_h_, area_)
 
 
 # -------------------------------
 # Adjust size screen
 # -------------------------------
-Screen_size = 9
+Screen_size = 10
 # -------------------------------
 sg.theme('LightGrey1')
 m1, n1 = 300, 300
@@ -66,22 +66,22 @@ layout3a = [[sg.T('', size=(5, 1)), sg.Radio('Control - Area', "RADIO3", enable_
             text_color='DarkBlue'), sg.T('', size=(5, 1))],
             [sg.Text('Buffer size:', size=(10, 1)), sg.InputText('5', key='_BUF_', size=(7, 1)),
              sg.Text('img.', size=(5, 1))],
-            [sg.Text('Area MAX:', size=(10, 1)), sg.InputText('70', key='_AMX_', size=(7, 1), enable_events=True),
+            [sg.Text('Area MAX:', size=(10, 1)), sg.InputText('50', key='_AMX_', size=(7, 1), enable_events=True),
              sg.Text('%', size=(5, 1)),
-             sg.Text('Time MIN fluid:', size=(14, 1)), sg.InputText('40', key='_THS_', size=(7, 1), enable_events=True),
+             sg.Text('Time MIN fluid:', size=(14, 1)), sg.InputText('40', key='_TLS_', size=(7, 1), enable_events=True),
              sg.Text('min', size=(4, 1))],
-            [sg.Text('Area MIN:', size=(10, 1)), sg.InputText('30', key='_AMN_', size=(7, 1), enable_events=True),
+            [sg.Text('Area MIN:', size=(10, 1)), sg.InputText('20', key='_AMN_', size=(7, 1), enable_events=True),
              sg.Text('%', size=(5, 1)),
-             sg.Text('Time MAX fluid:', size=(14, 1)), sg.InputText('1', key='_TLS_', size=(7, 1), enable_events=True),
+             sg.Text('Time MAX fluid:', size=(14, 1)), sg.InputText('1', key='_THS_', size=(7, 1), enable_events=True),
              sg.Text('min', size=(4, 1))]]
 
 
 layout4a = [[sg.Text('Radius Well: ', size=(12, 1)), sg.InputText('700', size=(6, 1), key='_RAW_'),
             sg.Text('um.', size=(8, 1))],
             [sg.Text('* Lowest fluid:', size=(12, 1)),
-             sg.InputText('10', key='_HST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))],
+             sg.InputText('10', key='_LST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))],
             [sg.Text('* Highest fluid:', size=(12, 1)),
-             sg.InputText('100', key='_LST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))]]
+             sg.InputText('100', key='_HST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))]]
 
 layout4b = [[sg.Text('Name: ', size=(9, 1)),
             sg.Combo(values=portsWIN, size=(9, 1), enable_events=True, key='_PORT_')],
@@ -131,6 +131,7 @@ graph = Vs.draw_figure(window["_CANVAS_"].TKCanvas, fig)
 # ----------------------------------------------------------------------------------
 time_, id_image, time_h, time_l, fluid_h, fluid_l, port_name, bauds_, = 0, 1, 0, 0, 0, 0, 0, 0
 area_h, area_l, c_port, id_sys, time_read, area_seq, area_total = 0, 0, -1, 0, 0, 0, 0
+ctr_exp, binary_ref, percent_ref, cont_z = 0, 0, 0, 0
 view_, save_, pump_, control, ctr_method = False, False, False, True, False
 video, name, image, ini_time, ini_time_, path_ori, path_des, type_i = None, None, None, None, None, None, None, None
 saveIm, pumpC, readIm, cords_well, cont_ini, i, k, buffer, buffer_size, p_area = None, None, None, [], 0, 0, 0, 0, 0, []
@@ -282,7 +283,7 @@ while True:
         # -------------------------------------
         if c_port == 1 and len(path_des) > 1 and pump_ is False:
             ini_time = datetime.now()
-            time_read = time_ + (time_*0.10)
+            time_read = np.round(1.10*time_, 2)
             if values['_CTA_']:
                 ctr_method = True
                 readIm = Vw.ReadLastImage(path_ori, type_i, id_image, ini_time, id_sys)
@@ -307,7 +308,11 @@ while True:
             if confirm:
                 image_l, name_l = readIm.load_image()
                 cont_ini, cords_well, ima_res, x, y, radius = segYes.ini_well(image_l, cont_ini, cords_well, buffer_size)
-                k, percentage_well, mean_area, img_f = segYes.well_main(path_des, ima_res, name_l, type_i, i, k, x, y, radius)
+                percentage_well, img_f, binary_ref, percent_ref, cont_z, mean_area = segYes.well_main(
+                                                                                     path_des, ima_res, name_l, i,
+                                                                                     ctr_exp, binary_ref, percent_ref,
+                                                                                     cont_z, x, y, radius)
+
                 area_yeast = np.round((area_total * percentage_well) / 100, 2)
                 results = results.append({'Image': name_l, 'Percentage': percentage_well, 'Area': area_yeast},
                                          ignore_index=True)
@@ -319,6 +324,12 @@ while True:
                 if mean_area > 0:
                     area_seq = np.copy(mean_area)
                     window['_MAR_'].update(mean_area)
+                    if ctr_exp == 0 and mean_area > area_h:
+                        ctr_exp = 1
+                        time_read = np.round(1.10*time_h, 2)
+                    if ctr_exp == 1 and mean_area < area_l:
+                        ctr_exp = 0
+                        time_read = np.round(1.10*time_, 2)
                 # -----------------------------------------------
                     p_area.append(mean_area)
                     values_area = np.array(p_area)
@@ -327,16 +338,16 @@ while True:
                     ax.grid()
                     graph.draw()
                 # -----------------------------------------------
+
             thread = threading.Thread(name="Thread-{}".format(2),
-                                      target=thread_pump2(fluid_h, fluid_l, area_h, area_l, area_seq),
+                                      target=thread_pump2(fluid_h, fluid_l, area_h, area_l, time_h, area_seq),
                                       args=(pumpC,))
             thread.setDaemon(True)
             thread.start()
             i += 1
         else:
             thread = threading.Thread(name="Thread-{}".format(2),
-                                      target=thread_pump1(fluid_h, fluid_l, time_h, time_l),
-                                      args=(pumpC,))
+                                      target=thread_pump1(fluid_h, fluid_l, time_h, time_l), args=(pumpC,))
             thread.setDaemon(True)
             thread.start()
 
