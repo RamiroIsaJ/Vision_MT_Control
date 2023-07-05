@@ -1,6 +1,6 @@
 # Ramiro Isa-Jara, ramiro.isaj@gmail.com
 # Vision Interface to use for viewing and saving images from Video Camera Input
-# Activate Pump with Analysis of Area of yeast growing ----- version 0.2.1
+# Activate Pump with Analysis of Area of yeast growing ----- version 0.2.3
 # This program uses 2 threads to avoid errors during the execution
 
 import cv2
@@ -118,8 +118,8 @@ col_2 = [[sg.Frame('Operative System: ', layout1, title_color='Blue'),
          [sg.Frame('Control settings: ', layout3a, title_color='Blue')],
          [sg.Frame('Pump settings: ', layout4a, title_color='Blue'),
           sg.Frame('Port settings: ', layout4b, title_color='Blue')],
-         [sg.T(" ", size=(1, 1)), sg.Button('View', size=(8, 1)), sg.Button('Save', size=(8, 1)),
-          sg.Button('Control', size=(8, 1)), sg.Button('Finish', size=(8, 1))],
+         [sg.T(" ", size=(4, 1)), sg.Button('View', size=(8, 1)), sg.Button('Save', size=(8, 1)),
+          sg.Button('Start', size=(8, 1)), sg.Button('Finish', size=(8, 1))],
          [sg.Frame('', layout7)]]
 
 layout = [[sg.Column(col_1), sg.Column(col_2)]]
@@ -202,6 +202,7 @@ while True:
             for i in range(1, 100, 25):
                 sg.OneLineProgressMeter('Saving RESULTS in CSV files', i + 25, 100, 'single')
                 tm.sleep(1)
+            pumpC.stop_pump()
             # ---------------------------------------------------------------------------------
         pump_, ctr_method = False, False
         cords_well, buffer, p_area, buffer_size, cont_ini, i, k = [], [], [], 0, 0, 0, 0
@@ -269,7 +270,7 @@ while True:
         thread.setDaemon(True)
         thread.start()
 
-    if event == 'Control':
+    if event == 'Start':
         radius = float(values['_RAW_'])
         area_total = np.round(math.pi * radius ** 2, 2)
         if values['_SYS_']:
@@ -304,15 +305,14 @@ while True:
 
     if pump_:
         if ctr_method:
-            confirm = readIm.ready_img(time_read, values)
+            confirm = readIm.ready_img(time_read, values, i)
             if confirm:
                 image_l, name_l = readIm.load_image()
                 cont_ini, cords_well, ima_res, x, y, radius = segYes.ini_well(image_l, cont_ini, cords_well, buffer_size)
-                percentage_well, img_f, binary_ref, percent_ref, cont_z, mean_area = segYes.well_main(
-                                                                                     path_des, ima_res, name_l, i,
+                k, percentage_well, img_f, binary_ref, percent_ref, cont_z, mean_area = segYes.well_main(
+                                                                                     path_des, ima_res, name_l, i, k,
                                                                                      ctr_exp, binary_ref, percent_ref,
                                                                                      cont_z, x, y, radius)
-
                 area_yeast = np.round((area_total * percentage_well) / 100, 2)
                 results = results.append({'Image': name_l, 'Percentage': percentage_well, 'Area': area_yeast},
                                          ignore_index=True)
@@ -325,11 +325,16 @@ while True:
                     area_seq = np.copy(mean_area)
                     window['_MAR_'].update(mean_area)
                     if ctr_exp == 0 and mean_area > area_h:
+                        ini_time = datetime.now()
                         ctr_exp = 1
                         time_read = np.round(1.10*time_h, 2)
+                        save_high_ = True
+                        saveIm = Vs.SaveImages(window, i, ini_time)
                     if ctr_exp == 1 and mean_area < area_l:
+                        ini_time = datetime.now()
                         ctr_exp = 0
-                        time_read = np.round(1.10*time_, 2)
+                        time_read = np.round(1.10 * time_, 2)
+                        saveIm = Vs.SaveImages(window, i, ini_time)
                 # -----------------------------------------------
                     p_area.append(mean_area)
                     values_area = np.array(p_area)
@@ -338,13 +343,14 @@ while True:
                     ax.grid()
                     graph.draw()
                 # -----------------------------------------------
+                i += 1
 
             thread = threading.Thread(name="Thread-{}".format(2),
                                       target=thread_pump2(fluid_h, fluid_l, area_h, area_l, time_h, area_seq),
                                       args=(pumpC,))
             thread.setDaemon(True)
             thread.start()
-            i += 1
+
         else:
             thread = threading.Thread(name="Thread-{}".format(2),
                                       target=thread_pump1(fluid_h, fluid_l, time_h, time_l), args=(pumpC,))
