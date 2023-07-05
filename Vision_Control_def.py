@@ -63,7 +63,9 @@ class ControlPump:
         # Start pump
         self.port.write(b'<<J000R>\n')
         # Vary flow pump
-        if v_fluid < 100:
+        if v_fluid < 10:
+            cad_port = '<<J000F000' + str(v_fluid) + '.0000>\n'
+        elif v_fluid < 100:
             cad_port = '<<J000F00' + str(v_fluid) + '.0000>\n'
         else:
             cad_port = '<<J000F0' + str(v_fluid) + '.0000>\n'
