@@ -78,6 +78,7 @@ class ControlPump:
             # Stop pump
             self.port.write(b'<<J000S>\n')
             self.port.close()
+            self.reference = False
 
     def control_time(self, fluid_h_, fluid_l_, time_h_, time_l_):
         self.fluid_H, self.fluid_L, self.time_H, self.time_L = fluid_h_, fluid_l_, time_h_, time_l_
