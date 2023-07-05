@@ -48,7 +48,7 @@ class ControlPump:
         self.port_name = port_n
         self.bauds = bauds
         self.fluid_H, self.fluid_L, self.time_H, self.time_L, self.port = None, None, None, None, None
-        self.area_H, self.area_L = None, None
+        self.area_H, self.area_L, self.reference = None, None, False
 
     def diff_time(self, t_end):
         t_diff = (t_end - self.ini_time).total_seconds()
@@ -71,9 +71,13 @@ class ControlPump:
             cad_port = '<<J000F0' + str(v_fluid) + '.0000>\n'
         self.port.write(bytes(cad_port.encode()))
         time.sleep(3)
-        # Stop pump
-        self.port.write(b'<<J000S>\n')
-        self.port.close()
+        self.reference = True
+
+    def stop_pump(self,):
+        if self.reference:
+            # Stop pump
+            self.port.write(b'<<J000S>\n')
+            self.port.close()
 
     def control_time(self, fluid_h_, fluid_l_, time_h_, time_l_):
         self.fluid_H, self.fluid_L, self.time_H, self.time_L = fluid_h_, fluid_l_, time_h_, time_l_
