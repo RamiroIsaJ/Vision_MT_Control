@@ -55,13 +55,14 @@ class ControlPump:
         return t_diff
 
     def active_pump(self, v_fluid):
-        self.port = serial.Serial(port=self.port_name,
-                                  baudrate=self.bauds,
-                                  bytesize=serial.EIGHTBITS,
-                                  parity=serial.PARITY_NONE,
-                                  stopbits=serial.STOPBITS_ONE)
-        # Start pump
-        self.port.write(b'<<J000R>\n')
+        if self.reference is False:
+            self.port = serial.Serial(port=self.port_name,
+                                      baudrate=self.bauds,
+                                      bytesize=serial.EIGHTBITS,
+                                      parity=serial.PARITY_NONE,
+                                      stopbits=serial.STOPBITS_ONE)
+            # Start pump
+            self.port.write(b'<<J000R>\n')
         # Vary flow pump
         if v_fluid < 10:
             cad_port = '<<J000F000' + str(v_fluid) + '.0000>\n'
@@ -70,7 +71,7 @@ class ControlPump:
         else:
             cad_port = '<<J000F0' + str(v_fluid) + '.0000>\n'
         self.port.write(bytes(cad_port.encode()))
-        time.sleep(3)
+        time.sleep(1)
         self.reference = True
 
     def stop_pump(self,):
