@@ -79,7 +79,7 @@ layout3a = [[sg.T('', size=(5, 1)), sg.Radio('Control - Area', "RADIO3", enable_
 layout4a = [[sg.Text('Radius Well: ', size=(12, 1)), sg.InputText('700', size=(6, 1), key='_RAW_'),
             sg.Text('um.', size=(8, 1))],
             [sg.Text('* Lowest fluid:', size=(12, 1)),
-             sg.InputText('10', key='_LST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))],
+             sg.InputText('1', key='_LST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))],
             [sg.Text('* Highest fluid:', size=(12, 1)),
              sg.InputText('100', key='_HST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))]]
 
