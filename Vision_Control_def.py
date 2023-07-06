@@ -63,6 +63,7 @@ class ControlPump:
                                       stopbits=serial.STOPBITS_ONE)
             # Start pump
             self.port.write(b'<<J000R>\n')
+            self.reference = True
         # Vary flow pump
         if v_fluid < 10:
             cad_port = '<<J000F000' + str(v_fluid) + '.0000>\n'
@@ -72,7 +73,6 @@ class ControlPump:
             cad_port = '<<J000F0' + str(v_fluid) + '.0000>\n'
         self.port.write(bytes(cad_port.encode()))
         time.sleep(1)
-        self.reference = True
 
     def stop_pump(self,):
         if self.reference:
