@@ -12,7 +12,7 @@ import pandas as pd
 import PySimpleGUI as sg
 from datetime import datetime
 import Vision_well_def as Vw
-import Vision_Control_def as Vs
+import Vision_Control_def_2 as Vs
 import matplotlib.pyplot as plt
 
 
