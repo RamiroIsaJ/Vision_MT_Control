@@ -34,11 +34,11 @@ def thread_pump2(fluid_h_, fluid_l_, area_h_, area_l_, time_h_, area_):
 Screen_size = 10
 # -------------------------------
 sg.theme('LightGrey1')
-m1, n1 = 300, 300
+m1, n1 = 550, 300
 img = np.ones((m1, n1, 1), np.uint8)*255
 
 f1 = np.array([60])
-fig, ax = plt.subplots(figsize=(4, 3), dpi=80)
+fig, ax = plt.subplots(figsize=(4, 3), dpi=100)
 ax.plot(f1, 'o-')
 ax.grid()
 
@@ -218,6 +218,10 @@ while True:
         idx = values['_VIN_']
         if view_ is False and idx != '':
             video = cv2.VideoCapture(int(idx))
+            video.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+            width, height = 1280, 720
+            video.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            video.set(cv2.CAP_PROP_FRAME_HEIGHT, height
             now_time1 = now.strftime("%H : %M : %S")
             window['_TIN_'].update(now_time1)
             window['_TFI_'].update('-- : -- : --')
