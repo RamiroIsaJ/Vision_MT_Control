@@ -1,6 +1,6 @@
 # Ramiro Isa-Jara, ramiro.isaj@gmail.com
 # Vision Interface to use for viewing and saving images from Video Camera Input
-# Activate Pump with Analysis of Area of yeast growing ----- version 1.1.2
+# Activate Pump with Analysis of Area of yeast growing ----- version 0.2.3
 # This program uses 2 threads to avoid errors during the execution
 
 import cv2
@@ -8,11 +8,10 @@ import math
 import threading
 import time as tm
 import numpy as np
-import pandas as pd
 import PySimpleGUI as sg
 from datetime import datetime
 import Vision_well_def as Vw
-import Vision_Control_def_2 as Vs
+import Vision_Control_def2 as Vs
 import matplotlib.pyplot as plt
 
 
@@ -26,6 +25,10 @@ def thread_pump1(fluid_h_, fluid_l_, time_h_, time_l_):
 
 def thread_pump2(fluid_h_, fluid_l_, area_h_, area_l_, time_h_, area_):
     pumpC.control_area(fluid_h_, fluid_l_, area_h_, area_l_, time_h_, area_)
+
+
+def thread_pump3(fluid_h_, fluid_l_, time_h_, time_l_):
+    pumpC.control_fluids(fluid_h_, fluid_l_, time_h_, time_l_)
 
 
 # -------------------------------
@@ -60,28 +63,28 @@ layout3 = [[sg.Radio('Minutes', "RADIO2", enable_events=True, default=True, key=
            [sg.Text('Video input: ', size=(10, 1)),
             sg.Combo(values=idx, size=(6, 1), enable_events=True, key='_VIN_')]]
 
-layout3a = [[sg.T('', size=(5, 1)), sg.Radio('Control - Fluids', "RADIO3", enable_events=True, default=True,
+layout3a = [[sg.T('', size=(5, 1)), sg.Radio('Control - Area', "RADIO3", default=True,
              text_color='DarkBlue', key='_CTA_'),
-             sg.T('', size=(7, 1)), sg.Radio('Control - Time', "RADIO3", enable_events=True, key='_CTT_',
+             sg.T('', size=(7, 1)), sg.Radio('Control - Time', "RADIO3", key='_CTT_',
             text_color='DarkBlue'), sg.T('', size=(5, 1))],
-            [sg.Text('Step Fluid:', size=(12, 1)), sg.InputText('50', key='_STE_', enable_events=True, size=(6, 1)),
-             sg.Text('ul/min.', size=(6, 1)), sg.Text('Time step:', size=(12, 1)),
-             sg.InputText('1', key='_STT_', size=(7, 1), enable_events=True), sg.Text('min', size=(4, 1))],
-            [sg.Text('Lowest fluid:', size=(12, 1)),
-             sg.InputText('50', key='_LWF_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(6, 1)),
-             sg.Text('Time MIN f.:', size=(12, 1)), sg.InputText('40', key='_TLS_', size=(7, 1), enable_events=True),
+            [sg.Text('Buffer size:', size=(10, 1)), sg.InputText('5', key='_BUF_', size=(7, 1)),
+             sg.Text('img.', size=(5, 1))],
+            [sg.Text('Area MAX:', size=(10, 1)), sg.InputText('50', key='_AMX_', size=(7, 1), enable_events=True),
+             sg.Text('%', size=(5, 1)),
+             sg.Text('Time MIN fluid:', size=(14, 1)), sg.InputText('1', key='_TLS_', size=(7, 1), enable_events=True),
              sg.Text('min', size=(4, 1))],
-            [sg.Text('Highest fluid:', size=(12, 1)),
-             sg.InputText('300', key='_HGF_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(6, 1)),
-             sg.Text('Time MAX f.:', size=(12, 1)), sg.InputText('1', key='_THS_', size=(7, 1), enable_events=True),
+            [sg.Text('Area MIN:', size=(10, 1)), sg.InputText('20', key='_AMN_', size=(7, 1), enable_events=True),
+             sg.Text('%', size=(5, 1)),
+             sg.Text('Time MAX fluid:', size=(14, 1)), sg.InputText('0', key='_THS_', size=(7, 1), enable_events=True),
              sg.Text('min', size=(4, 1))]]
+
 
 layout4a = [[sg.Text('Radius Well: ', size=(12, 1)), sg.InputText('700', size=(6, 1), key='_RAW_'),
             sg.Text('um.', size=(8, 1))],
             [sg.Text('* Lowest fluid:', size=(12, 1)),
-             sg.InputText('10', key='_LST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))],
-            [sg.Text('* Highest fluid:', size=(12, 1)),
-             sg.InputText('100', key='_HST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))]]
+             sg.InputText('50', key='_LST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))],
+            [sg.Text('* Step fluid:', size=(12, 1)),
+             sg.InputText('50', key='_HST_', size=(6, 1), enable_events=True), sg.Text('ul/min.', size=(5, 1))]]
 
 layout4b = [[sg.Text('Name: ', size=(9, 1)),
             sg.Combo(values=portsWIN, size=(9, 1), enable_events=True, key='_PORT_')],
@@ -131,11 +134,10 @@ graph = Vs.draw_figure(window["_CANVAS_"].TKCanvas, fig)
 # ----------------------------------------------------------------------------------
 time_, id_image, time_h, time_l, fluid_h, fluid_l, port_name, bauds_, = 0, 1, 0, 0, 0, 0, 0, 0
 area_h, area_l, c_port, id_sys, time_read, area_seq, area_total = 0, 0, -1, 0, 0, 0, 0
-ctr_exp, binary_ref, percent_ref, cont_z, fluid_step, pressures = 0, 0, 0, 0, 0, []
+ctr_exp, binary_ref, percent_ref, cont_z = 0, 0, 0, 0
 view_, save_, pump_, control, ctr_method = False, False, False, True, False
 video, name, image, ini_time, ini_time_, path_ori, path_des, type_i = None, None, None, None, None, None, None, None
 saveIm, pumpC, readIm, cords_well, cont_ini, i, k, buffer, buffer_size, p_area = None, None, None, [], 0, 0, 0, 0, 0, []
-results = pd.DataFrame(columns=['Image', 'Percentage', 'Area'])
 segYes = Vw.SegmentYeast()
 segYes.build_filters()
 # -----------------------------------------------------------------------------------
@@ -196,17 +198,16 @@ while True:
             ax.grid()
             graph.draw()
             # -------------------------------------------------------------------------------
-            header = values['_NAM_'].split('_')[0]
-            Vw.save_csv_file(results, path_des, header)
-            Vw.graph_data(path_des, header)
+            # header = values['_NAM_'].split('_')[0]
+            # Vw.graph_data(path_des, header)
             for i in range(1, 100, 25):
                 sg.OneLineProgressMeter('Saving RESULTS in CSV files', i + 25, 100, 'single')
                 tm.sleep(1)
             pumpC.stop_pump()
+            pumpC.save_csv_pressures(path_des)
             # ---------------------------------------------------------------------------------
         pump_, ctr_method = False, False
         cords_well, buffer, p_area, buffer_size, cont_ini, i, k = [], [], [], 0, 0, 0, 0
-        Vs.save_csv_file(pressures, path_des)
         if view_:
             window.find_element('View').Update(disabled=False)
             now_time = now.strftime("%H : %M : %S")
@@ -221,7 +222,7 @@ while True:
             video.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
             width, height = 1280, 720
             video.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-            video.set(cv2.CAP_PROP_FRAME_HEIGHT, height
+            video.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
             now_time1 = now.strftime("%H : %M : %S")
             window['_TIN_'].update(now_time1)
             window['_TFI_'].update('-- : -- : --')
@@ -276,8 +277,8 @@ while True:
         thread.start()
 
     if event == 'Start':
-        # radius = float(values['_RAW_'])
-        # area_total = np.round(math.pi * radius ** 2, 2)
+        radius = float(values['_RAW_'])
+        area_total = np.round(math.pi * radius ** 2, 2)
         if values['_SYS_']:
             path_des = Vs.update_dir(values['_DES_']) + "\\"
             path_des = r'{}'.format(path_des)
@@ -293,14 +294,11 @@ while True:
             if values['_CTA_']:
                 ctr_method = True
                 readIm = Vw.ReadLastImage(path_ori, type_i, id_image, ini_time, id_sys)
-                fluid_step = float(values['_STE_'])
-                fluid_l = float(values['_LWF_'])
-                fluid_h = float(values['_HGF_'])
-                time_l = int(values['_STT_'])
-                fluid_act = np.copy(fluid_l)
-                # area_h = float(values['_AMX_'])
-                # area_l = float(values['_AMN_'])
-                # buffer_size = int(values['_BUF_'])
+                area_h = float(values['_AMX_'])
+                area_l = float(values['_AMN_'])
+                buffer_size = int(values['_BUF_'])
+                time_h = float(values['_THS_'])
+                time_l = float(values['_TLS_'])
             else:
                 time_h = float(values['_THS_'])
                 time_l = float(values['_TLS_'])
@@ -315,9 +313,13 @@ while True:
 
     if pump_:
         if ctr_method:
-            control, pressures = pumpC.control_fluids(fluid_h, time_l, pressures)
-            if control is False:
-                fluid_h += fluid_step
+            confirm = readIm.ready_img(time_read, values)
+            if confirm:
+                thread = threading.Thread(name="Thread-{}".format(2),
+                                          target=thread_pump3(fluid_h, fluid_l, time_h, time_l), args=(pumpC,))
+                thread.setDaemon(True)
+                thread.start()
+
         else:
             thread = threading.Thread(name="Thread-{}".format(2),
                                       target=thread_pump1(fluid_h, fluid_l, time_h, time_l), args=(pumpC,))
