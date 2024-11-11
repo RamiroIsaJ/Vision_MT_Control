@@ -2,7 +2,9 @@ import cv2
 import os
 import time
 import serial
+import threading
 import numpy as np
+import pandas as pd
 import matplotlib
 from datetime import datetime
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -50,6 +52,8 @@ class ControlPump:
         self.bauds = bauds
         self.fluid_H, self.fluid_L, self.time_H, self.time_L, self.port, self.time_step = None, None, None, None, None, None
         self.area_H, self.area_L, self.reference = None, None, False
+        self.control_fluid, self.values_port = False, []
+        self.data = pd.DataFrame(columns=['Time', 'Pressure'])
 
     def diff_time(self, t_end):
         t_diff = (t_end - self.ini_time).total_seconds()
@@ -82,15 +86,39 @@ class ControlPump:
             self.port.close()
             self.reference = False
 
+    def read_serial_values(self):
+        self.port.write(b'<J000>\n')
+        values = self.port.read(1).decode()
+        if values == '<':
+            while True:
+                self.port.write(b'<J000>\n')
+                values = self.port.read(1).decode()
+                if values == '>':
+                    break
+                else:
+                    self.values_port.append(values)
+
+    def compute_pressure(self,):
+        values_port = "".join(self.values_port)
+        position = values_port.find('O')
+        if position > -1:
+            time_v = datetime.now()
+            pressure = values_port.split('O')[1]
+            print(f'Time: {time_v} ------- Pressure value: {pressure}')
+            new_row = pd.DataFrame.from_records([{'Time': time_v, 'Pressure': pressure}])
+            self.data = pd.concat([self.data, new_row], ignore_index=True)
+        self.values_port = []
+
     def read_pressure(self,):
-        pressure = 0
         if self.reference:
             # read pressure from pump
-            values_port = self.port.readline()
-            if values_port[0:2] == b"#S":
-                pressure = float(values_port[2:].split(b",")[5])
-
-        return pressure
+            self.values_port = []
+            thread3 = threading.Thread(target=self.read_serial_values(), args=(self.port,))
+            thread4 = threading.Thread(target=self.compute_pressure(), args=(self.port,))
+            thread3.start()
+            thread4.start()
+            thread3.join()
+            thread4.join()
 
     def control_time(self, fluid_h_, fluid_l_, time_h_, time_l_):
         self.fluid_H, self.fluid_L, self.time_H, self.time_L = fluid_h_, fluid_l_, time_h_, time_l_
@@ -115,25 +143,34 @@ class ControlPump:
                 self.control = True
                 self.ini_time = datetime.now()
 
-    def control_fluids(self, fluid_h_, time_step_, pressures):
-        self.fluid_H, self.time_step = fluid_h_, time_step_
+    def control_fluids(self, fluid_h_, fluid_l_, time_h_, time_l_):
+        if self.control_fluid is False:
+            self.fluid_L = fluid_l_
+            self.control_fluid = True
+
+        self.fluid_H, self.time_H, self.time_L = fluid_h_, time_h_, time_l_
         now_time = datetime.now()
         time_sleep = self.diff_time(now_time)
         time_sleep /= 60
 
         if self.control:
-            rest_time = np.round(self.time_step - time_sleep, 4)
-            print(' Injected fluid : ' + str(self.fluid_H) + ' ul/min.  Remaining time ----->> ' + str(rest_time))
+            rest_time = np.round(self.time_L - time_sleep, 4)
+            print(' Injected fluid : ' + str(self.fluid_L) + ' ul/min.  Remaining time ----->> ' + str(rest_time))
             if rest_time > 0:
-                self.active_pump(self.fluid_H)
-                if rest_time*100 % 5:
-                    pressure = self.read_pressure()
-                    pressures.append(pressure)
+                thread1 = threading.Thread(target=self.active_pump(self.fluid_L), args=(self.port,))
+                thread2 = threading.Thread(target=self.read_pressure(), args=(self.port,))
+                thread1.start()
+                thread2.start()
+                thread1.join()
+                thread2.join()
             else:
                 self.control = False
                 self.ini_time = datetime.now()
-
-        return self.control, pressures
+        else:
+            self.fluid_L += self.fluid_H
+            print('Change fluid: ' + str(self.fluid_L) + ' ul/min.')
+            self.control = True
+            self.ini_time = datetime.now()
 
     def control_area(self, fluid_h_, fluid_l_, area_h_, area_l_, time_h_, m_area):
         self.fluid_H, self.fluid_L, self.area_H, self.area_L, self.time_H = fluid_h_, fluid_l_, area_h_, area_l_, time_h_
@@ -156,6 +193,14 @@ class ControlPump:
                 if m_area < self.area_L:
                     self.control = True
                 self.ini_time = datetime.now()
+
+    def save_csv_pressures(self, path_des):
+        print(self.data)
+        root_file = os.path.join(path_des, 'pressures.csv')
+        self.data.to_csv(root_file, index=False)
+        print('----------------------------------------------')
+        print('..... Save PRESSURES in CSV file successfully .....')
+        print('----------------------------------------------')
 
 
 def bytes_(img_, m, n):
@@ -204,12 +249,3 @@ def draw_figure(canvas, figure):
     figure_canvas_agg.get_tk_widget().pack(side="top", fill="both", expand=1)
 
     return figure_canvas_agg
-
-
-def save_csv_file(results, path_des):
-    # Save data in csv file
-    root_file = os.path.join(path_des, 'pressures.csv')
-    results.to_csv(root_file, index=False)
-    print('----------------------------------------------')
-    print('..... Save data in CSV file successfully .....')
-    print('----------------------------------------------')
